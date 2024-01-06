@@ -1,67 +1,76 @@
-import subprocess
+import bittensor as bt
+import socket
 import re
-from getpass import getpass
 import time
 
-def register_on_bittensor():
-    network_choice = input("Connect locally or remotely? [local/remote]: ").strip().lower()
-    command = 'btcli s register'
-    if network_choice == "local":
-        command += ' --subtensor.network ws://127.0.0.1:9944'
-    elif network_choice == "remote":
-        remote_address = input("Enter remote address: ")
-        command += f' --subtensor.network {remote_address}'
+def get_numeric_value(balance_obj):
+    """Extracts numeric value from a Balance object."""
+    balance_str = str(balance_obj)
+    # Use regular expression to find the first sequence of digits and optional decimal point
+    match = re.search(r"\d+(\.\d+)?", balance_str)
+    if match:
+        return float(match.group(0))
     else:
-        print("Invalid choice. Exiting.")
+        raise ValueError("Failed to extract numeric value from balance object")
+
+def register_neuron(network, netuid, wallet_name, hotkey_name, max_cost, timeout=30, retry_delay=30):
+    # Initialize subtensor configuration
+    config = bt.subtensor.config()
+    config.subtensor.chain_endpoint = network
+
+    # Initialize subtensor connection
+    try:
+        sub = bt.subtensor(config=config)
+        print("Connected to subtensor.")
+    except Exception as e:
+        print(f"Failed to connect to the Subtensor: {e}")
         return
 
-    netuid = input("Enter netuid: ")
-    wallet_name = input("Enter wallet name: ")
-    hotkey_name = input("Enter hotkey name: ")
-    max_cost = float(input("Enter maximum registration cost: "))
-    password = getpass("Enter password: ")
+    # Initialize the wallet with the specified hotkey
+    wallet_instance = bt.wallet(name=wallet_name, hotkey=hotkey_name)
+    print(f"Initializing wallet with name: {wallet_name} and hotkey: {hotkey_name}")
+
+    # Set socket default timeout
+    socket.setdefaulttimeout(timeout)
 
     while True:
-        try:
-            with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True) as process:
-                for input_value in [netuid, wallet_name, hotkey_name]:
-                    process.stdin.write(f"{input_value}\n")
-                    process.stdin.flush()
-                    time.sleep(0.5)
+        # Check balance and current registration cost
+        balance_obj = sub.get_balance(address=wallet_instance.coldkeypub.ss58_address)
+        current_recycle_obj = sub.burn(netuid=netuid)
 
-                process.stdin.write("y\n")
-                process.stdin.flush()
-                time.sleep(0.5)
-                process.stdin.write(f"{password}\n")
-                process.stdin.flush()
-                process.stdin.close()
+        # Extract numeric values
+        balance = get_numeric_value(balance_obj)
+        current_recycle = get_numeric_value(current_recycle_obj)
 
-                output_str = process.stdout.read()
-                error_str = process.stderr.read()
+        print(f"Current balance: {balance}")
+        print(f"Current registration cost: {current_recycle}")
 
-                print(output_str)
-                if error_str:
-                    print(f"An error occurred: {error_str}")
-                    continue
-
-                if "Insufficient balance" in output_str:
-                    print("Insufficient balance to register neuron. Retrying with the same inputs...")
-                    continue
-
-                if "TooManyRegistrationsThisInterval" in output_str:
-                    print("Registration failed due to too many registrations this interval. Retrying...")
-                    continue
-
-                if "Registered" in output_str or "success" in output_str.lower():
+        # Check if current registration cost exceeds the maximum allowed cost
+        if current_recycle > max_cost:
+            print(f"Current registration cost {current_recycle} exceeds the maximum allowed {max_cost}. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)  # Wait for 30 seconds before retrying
+        else:
+            # Attempt to register the neuron
+            try:
+                print("Attempting to register the neuron...")
+                success = sub.register(wallet=wallet_instance, netuid=netuid)
+                if success:
                     print("Registration successful.")
                     break
                 else:
-                    print("Registration attempt complete, but the outcome is unclear. Retrying with the same inputs...")
-                    continue
+                    print("Registration failed. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+            except Exception as e:
+                print(f"An error occurred during registration: {e}. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
 
-        except Exception as e:
-            print(f"An exception occurred: {e}")
-            continue
 
-if __name__ == "__main__":
-    register_on_bittensor()
+# Main execution
+connection_type = input("Connect locally or remotely? (local/remote): ").strip().lower()
+network = "ws://127.0.0.1:9944" if connection_type == "local" else input("Enter remote address: ").strip()
+netuid = int(input("Enter netuid: "))
+wallet_name = input("Enter wallet name: ").strip()
+hotkey_name = input("Enter hotkey name: ").strip()
+max_cost = float(input("Enter maximum registration cost: "))
+
+register_neuron(network, netuid, wallet_name, hotkey_name, max_cost)
