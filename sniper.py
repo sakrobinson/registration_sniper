@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 bt_wallet_name = input("Enter your Bittensor wallet name: ")
 bt_hotkey_name = input("Enter your Bittensor hotkey name: ")
 bt_cold_pw_wallet = getpass("Enter your Bittensor wallet password: ")
+# Prompt the user for the PM2 command line or construct it if you have a standard format (forthcoming!)
+pm2_command_line = input("Enter your PM2 command line to start mining: ")
 subtensor_choice = input("Local or Remote subtensor? (local/remote): ").lower()
 if subtensor_choice == "local":
     bt_endpoint = "ws://127.0.0.1:9944"
@@ -97,9 +99,9 @@ except Exception as e:
                 logger.info("Neuron registered.")
                 try:
                     logger.info("Starting mining script...")
-                    subprocess.run(["./start_mining.sh"], check=True)
-                    except subprocess.CalledProcessError as e:
-                        logger.error(f"Failed to start mining bash script: {e}")    
+                    subprocess.run(["./start_mining.sh", bt_wallet_name, bt_hotkey_name, pm2_command_line], check=True)
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Failed to start mining bash script: {e}")    
                 break
             else:
                 logger.info("Registration unsuccessful. Waiting to repeat....")
