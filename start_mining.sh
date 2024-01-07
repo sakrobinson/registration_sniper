@@ -38,5 +38,5 @@ check_and_start_mining() {
 # Main loop
 while true; do
    check_and_start_mining
-   sleep 30m # Wait for 30 minutes before checking again
+   sleep 15m # Wait for 30 minutes before checking again
 done
