@@ -4,6 +4,7 @@ import pexpect
 import logging
 from logging.handlers import RotatingFileHandler
 from getpass import getpass
+import subprocess
 
 # Set logging
 logging.basicConfig(
@@ -91,8 +92,14 @@ except Exception as e:
             output = child.before.decode()
             logger.info(output)  # Print the output from the command
 
-            if "Registered." in output:
+            #This had a period: 'Registered.' I removed it because I could not find it in bittensor. the exact line appears to be: ":white_heavy_check_mark: [green]Registered[/green]"
+            if "Registered" in output:
                 logger.info("Neuron registered.")
+                try:
+                    logger.info("Starting mining script...")
+                    subprocess.run(["./start_mining.sh"], check=True)
+                    except subprocess.CalledProcessError as e:
+                        logger.error(f"Failed to start mining bash script: {e}")    
                 break
             else:
                 logger.info("Registration unsuccessful. Waiting to repeat....")
