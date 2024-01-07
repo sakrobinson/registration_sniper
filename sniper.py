@@ -98,6 +98,7 @@ except Exception as e:
             #This had a period: 'Registered.' I removed it because I could not find it in bittensor. the exact line appears to be: ":white_heavy_check_mark: [green]Registered[/green]"
             if "Registered" in output:
                 logger.info("Neuron registered.")
+                logger.info(output)
                 try:
                     logger.info("Starting mining script...")
                     subprocess.run(["./start_mining.sh", bt_wallet_name, bt_hotkey_name, pm2_command_line], check=True)
