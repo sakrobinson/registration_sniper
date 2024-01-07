@@ -92,6 +92,7 @@ except Exception as e:
             child.sendline(bt_cold_pw_wallet)
             child.expect(pexpect.EOF, timeout=None)
             output = child.before.decode()
+            logger.info("Output from registration attempt:")
             logger.info(output)  # Print the output from the command
 
             #This had a period: 'Registered.' I removed it because I could not find it in bittensor. the exact line appears to be: ":white_heavy_check_mark: [green]Registered[/green]"
@@ -104,7 +105,8 @@ except Exception as e:
                     logger.error(f"Failed to start mining bash script: {e}")    
                 break
             else:
-                logger.info("Registration unsuccessful. Waiting to repeat....")
+                logger.info("Registration unsuccessful. Waiting to repeat... Output:")
+                logger.info(output)
                 sleep(SLEEP_TIME_LONG)
         else:
             logger.info("Current registration fee above threshold.")
