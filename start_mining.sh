@@ -1,15 +1,9 @@
 #!/bin/bash
 
-# Prompt user for wallet name
-read -p "Enter your Bittensor wallet name: " wallet_name
-
-# Prompt user for hotkey name
-read -p "Enter your Bittensor hotkey name: " hotkey_name
-
-# Prompt user for PM2 command line, reminding them to use the absolute path
-echo "Enter your PM2 command line to start mining:"
-echo "Note: Please ensure you provide the absolute path to the mining script."
-read -p "PM2 command line: " pm2_command_line
+# Assign command-line arguments to variables
+wallet_name=$1
+hotkey_name=$2
+pm2_command_line=$3
 
 # Function to check for a hotkey registration and start mining
 check_and_start_mining() {
@@ -26,8 +20,8 @@ check_and_start_mining() {
            echo "Mining script started."
            exit 0  # Exit the script
        else
-           # message for the script is not found
-           echo "Error: PM2 is not installed or the mining script was not found at the provided path, check that your pm2 command will execute from the root directory."
+           # Error message if PM2 is not installed or the script is not found
+           echo "Error: PM2 is not installed or the mining script was not found at the provided path."
            exit 1
        fi
    else
@@ -38,5 +32,5 @@ check_and_start_mining() {
 # Main loop
 while true; do
    check_and_start_mining
-   sleep 15m # Wait for 30 minutes before checking again
+   sleep 30m # Wait for 30 minutes before checking again
 done
