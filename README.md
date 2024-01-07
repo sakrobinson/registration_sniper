@@ -22,8 +22,11 @@ This Python script automates the process of registering on the Bittensor network
 2. Ensure Python 3 is installed on your system.
 
 ## Usage
+1. Allow bash permissions to run the miner automation script
+   ```bash
+   chmod +x /registration_sniper/start_mining.sh
 
-1. Run the script using Python:
+2. Run the script using Python:
 
    ```bash
-   python3 sniper.py
+   python3 /registration_sniper/sniper.py
